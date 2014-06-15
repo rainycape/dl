@@ -1,4 +1,4 @@
-package dlsym
+package dl
 
 // #include <dlfcn.h>
 // #include <stdlib.h>
@@ -92,6 +92,17 @@ func (d *DL) Sym(symbol string, out interface{}) error {
 		elem.SetFloat(float64(*(*float32)(handle)))
 	case reflect.Float64:
 		elem.SetFloat(float64(*(*float64)(handle)))
+	case reflect.Func:
+		typ := elem.Type()
+		tr, err := makeTrampoline(typ, handle)
+		if err != nil {
+			return err
+		}
+		v := reflect.MakeFunc(typ, tr)
+		elem.Set(v)
+	case reflect.Ptr:
+		v := reflect.NewAt(elem.Type().Elem(), handle)
+		elem.Set(v)
 	case reflect.String:
 		elem.SetString(C.GoString(*(**C.char)(handle)))
 	case reflect.UnsafePointer:
