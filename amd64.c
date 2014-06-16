@@ -5,12 +5,12 @@
 
 #include "trampoline.h"
 
-/* If you're using more than 100 arguments you
- * deserve nothing but a dirty crash
-*/
 #define MAX_STACK_COUNT 100
 #define MAX_INTEGER_COUNT (6)
 #define MAX_FLOAT_COUNT (8)
+
+#define _xstr(s) _str(s)
+#define _str(s) #s
 
 int
 call(void *f, void **args, int *flags, int count, void **out)
@@ -44,6 +44,10 @@ call(void *f, void **args, int *flags, int count, void **out)
                 integers[integer_count++] = args[ii];
                 continue;
             }
+        }
+        if (stack_count > MAX_STACK_COUNT) {
+            *out = strdup("maximum number of stack arguments reached (" _xstr(MAX_STACK_COUNT) ")");
+            return 1;
         }
         // Argument on the stack
         stack[stack_count] = args[ii];
