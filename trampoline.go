@@ -11,6 +11,10 @@ import (
 	"unsafe"
 )
 
+var (
+	emptyType = reflect.TypeOf((*interface{})(nil)).Elem()
+)
+
 type rFunc func([]reflect.Value) []reflect.Value
 
 func makeTrampoline(typ reflect.Type, handle unsafe.Pointer) (rFunc, error) {
@@ -29,11 +33,23 @@ func makeTrampoline(typ reflect.Type, handle unsafe.Pointer) (rFunc, error) {
 		}
 	}
 	return func(in []reflect.Value) []reflect.Value {
+		if typ.IsVariadic() && len(in) > 0 {
+			last := in[len(in)-1]
+			in = in[:len(in)-1]
+			if last.Len() > 0 {
+				for ii := 0; ii < last.Len(); ii++ {
+					in = append(in, last.Index(ii))
+				}
+			}
+		}
 		count := len(in)
 		args := make([]unsafe.Pointer, count)
 		flags := make([]C.int, count+1)
 		flags[count] = outFlag
 		for ii, v := range in {
+			if v.Type() == emptyType {
+				v = reflect.ValueOf(v.Interface())
+			}
 			switch v.Kind() {
 			case reflect.String:
 				s := C.CString(v.String())
@@ -57,7 +73,11 @@ func makeTrampoline(typ reflect.Type, handle unsafe.Pointer) (rFunc, error) {
 				panic(fmt.Errorf("can't bind value of type %s", v.Type()))
 			}
 		}
-		ret := C.call(handle, &args[0], &flags[0], C.int(count))
+		var argp *unsafe.Pointer
+		if count > 0 {
+			argp = &args[0]
+		}
+		ret := C.call(handle, argp, &flags[0], C.int(count))
 		if numOut > 0 {
 			var v reflect.Value
 			switch kind {
