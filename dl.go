@@ -14,19 +14,33 @@ import (
 )
 
 const (
-	RTLD_LAZY = int(C.RTLD_LAZY)
-	RTLD_NOW  = int(C.RTLD_NOW)
+	// dlopen() flags. See man dlopen.
+	RTLD_LAZY     = int(C.RTLD_LAZY)
+	RTLD_NOW      = int(C.RTLD_NOW)
+	RTLD_GLOBAL   = int(C.RTLD_GLOBAL)
+	RTLD_LOCAL    = int(C.RTLD_LOCAL)
+	RTLD_NODELETE = int(C.RTLD_NODELETE)
+	RTLD_NOLOAD   = int(C.RTLD_NOLOAD)
 )
 
 var (
 	mu sync.Mutex
 )
 
+// DL represents an opened dynamic library. Use Open
+// to initialize a DL and use DL.Close when you're finished
+// with it. Note that when the DL is closed all its loaded
+// symbols become invalid.
 type DL struct {
 	mu     sync.Mutex
 	handle unsafe.Pointer
 }
 
+// Open opens the shared library identified by the given name
+// with the given flags. See man dlopen for the available flags
+// and its meaning. Note that the only difference with dlopen is that
+// if nor RTLD_LAZY nor RTLD_NOW are specified, Open defaults to
+// RTLD_NOW rather than returning an error.
 func Open(name string, flag int) (*DL, error) {
 	if flag&RTLD_LAZY == 0 && flag&RTLD_NOW == 0 {
 		flag |= RTLD_NOW
@@ -44,6 +58,10 @@ func Open(name string, flag int) (*DL, error) {
 	}, nil
 }
 
+// Sym loads the symbol identified by the given name into
+// the out parameter. Note that out must always be a pointer.
+// See the package documentation to learn how types are mapped
+// between Go and C.
 func (d *DL) Sym(symbol string, out interface{}) error {
 	s := C.CString(symbol)
 	defer C.free(unsafe.Pointer(s))
@@ -115,6 +133,8 @@ func (d *DL) Sym(symbol string, out interface{}) error {
 	return nil
 }
 
+// Close closes the shared library handle. All symbols
+// loaded from the library will become invalid.
 func (d *DL) Close() error {
 	if d.handle != nil {
 		d.mu.Lock()
