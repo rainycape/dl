@@ -1,5 +1,11 @@
+#ifdef __APPLE__
+#define SYMBOL(s) _##s
+#else
+#define SYMBOL(s) s
+#endif
+
 .text
-.globl make_call
+.globl SYMBOL(make_call)
 
 /*
     Received arguments are
@@ -11,7 +17,7 @@
     %r9: wheter the function pointer returns in %xmm0
 */
 
-make_call:
+SYMBOL(make_call):
 
     pushq %rbp
     movq %rsp, %rbp
