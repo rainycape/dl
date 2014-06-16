@@ -171,6 +171,30 @@ func TestFunctions(t *testing.T) {
 	}
 }
 
+func TestStackArguments(t *testing.T) {
+	p := filepath.Join("testdata", "lib.so")
+	dl, err := Open(p, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer dl.Close()
+	var sum6 func(int32, int32, int32, int32, int32, int32) int32
+	if err := dl.Sym("sum6", &sum6); err != nil {
+		t.Fatal(err)
+	}
+	if r := sum6(1, 1, 1, 1, 1, 1); r != 6 {
+		t.Errorf("expecting sum6(1...) = 6, got %v instead", r)
+	}
+
+	var sum8 func(int32, int32, int32, int32, int32, int32, int32, int32) int32
+	if err := dl.Sym("sum8", &sum8); err != nil {
+		t.Fatal(err)
+	}
+	if r := sum8(1, 1, 1, 1, 1, 1, 1, 1); r != 8 {
+		t.Errorf("expecting sum8(1...) = 8, got %v instead", r)
+	}
+}
+
 func init() {
 	if err := exec.Command("make", "-C", "testdata").Run(); err != nil {
 		panic(err)

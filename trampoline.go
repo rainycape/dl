@@ -5,6 +5,7 @@ package dl
 import "C"
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"reflect"
@@ -55,22 +56,48 @@ func makeTrampoline(typ reflect.Type, handle unsafe.Pointer) (rFunc, error) {
 				s := C.CString(v.String())
 				defer C.free(unsafe.Pointer(s))
 				args[ii] = unsafe.Pointer(s)
-			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+				flags[ii] |= C.ARG_FLAG_SIZE_PTR
+			case reflect.Int, reflect.Int32:
 				args[ii] = unsafe.Pointer(uintptr(v.Int()))
-			case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+				flags[ii] = C.ARG_FLAG_SIZE_32
+			case reflect.Int8:
+				args[ii] = unsafe.Pointer(uintptr(v.Int()))
+				flags[ii] = C.ARG_FLAG_SIZE_8
+			case reflect.Int16:
+				args[ii] = unsafe.Pointer(uintptr(v.Int()))
+				flags[ii] = C.ARG_FLAG_SIZE_16
+			case reflect.Int64:
+				args[ii] = unsafe.Pointer(uintptr(v.Int()))
+				flags[ii] = C.ARG_FLAG_SIZE_64
+			case reflect.Uint, reflect.Uint32:
 				args[ii] = unsafe.Pointer(uintptr(v.Uint()))
+				flags[ii] = C.ARG_FLAG_SIZE_32
+			case reflect.Uint8:
+				args[ii] = unsafe.Pointer(uintptr(v.Uint()))
+				flags[ii] = C.ARG_FLAG_SIZE_8
+			case reflect.Uint16:
+				args[ii] = unsafe.Pointer(uintptr(v.Uint()))
+				flags[ii] = C.ARG_FLAG_SIZE_16
+			case reflect.Uint64:
+				args[ii] = unsafe.Pointer(uintptr(v.Uint()))
+				flags[ii] = C.ARG_FLAG_SIZE_64
 			case reflect.Float32:
 				args[ii] = unsafe.Pointer(uintptr(math.Float32bits(float32(v.Float()))))
-				flags[ii] |= C.ARG_FLAG_FLOAT
+				flags[ii] |= C.ARG_FLAG_FLOAT | C.ARG_FLAG_SIZE_32
 			case reflect.Float64:
 				args[ii] = unsafe.Pointer(uintptr(math.Float64bits(v.Float())))
-				flags[ii] |= C.ARG_FLAG_FLOAT
+				flags[ii] |= C.ARG_FLAG_FLOAT | C.ARG_FLAG_SIZE_64
+			case reflect.Ptr:
+				args[ii] = unsafe.Pointer(v.Pointer())
+				flags[ii] |= C.ARG_FLAG_SIZE_PTR
 			case reflect.Slice:
 				if v.Len() > 0 {
 					args[ii] = unsafe.Pointer(v.Index(0).UnsafeAddr())
 				}
+				flags[ii] |= C.ARG_FLAG_SIZE_PTR
 			case reflect.Uintptr:
 				args[ii] = unsafe.Pointer(uintptr(v.Uint()))
+				flags[ii] |= C.ARG_FLAG_SIZE_PTR
 			default:
 				panic(fmt.Errorf("can't bind value of type %s", v.Type()))
 			}
@@ -79,16 +106,43 @@ func makeTrampoline(typ reflect.Type, handle unsafe.Pointer) (rFunc, error) {
 		if count > 0 {
 			argp = &args[0]
 		}
-		ret := C.call(handle, argp, &flags[0], C.int(count))
+		var ret unsafe.Pointer
+		if C.call(handle, argp, &flags[0], C.int(count), &ret) != 0 {
+			s := C.GoString((*C.char)(ret))
+			C.free(ret)
+			panic(errors.New(s))
+		}
 		if numOut > 0 {
 			var v reflect.Value
 			switch kind {
 			case reflect.Int:
 				v = reflect.ValueOf(int(int32(uintptr(ret))))
+			case reflect.Int8:
+				v = reflect.ValueOf(int8(uintptr(ret)))
+			case reflect.Int16:
+				v = reflect.ValueOf(int16(uintptr(ret)))
+			case reflect.Int32:
+				v = reflect.ValueOf(int32(uintptr(ret)))
+			case reflect.Int64:
+				v = reflect.ValueOf(int64(uintptr(ret)))
+			case reflect.Uint:
+				v = reflect.ValueOf(uint(uint32(uintptr(ret))))
+			case reflect.Uint8:
+				v = reflect.ValueOf(uint8(uintptr(ret)))
+			case reflect.Uint16:
+				v = reflect.ValueOf(uint16(uintptr(ret)))
+			case reflect.Uint32:
+				v = reflect.ValueOf(uint32(uintptr(ret)))
+			case reflect.Uint64:
+				v = reflect.ValueOf(uint64(uintptr(ret)))
 			case reflect.Float32:
 				v = reflect.ValueOf(math.Float32frombits(uint32(uintptr(ret))))
 			case reflect.Float64:
 				v = reflect.ValueOf(math.Float64frombits(uint64(uintptr(ret))))
+			case reflect.Uintptr:
+				v = reflect.ValueOf(uintptr(ret))
+			case reflect.UnsafePointer:
+				v = reflect.ValueOf(ret)
 			default:
 				panic(fmt.Errorf("can't retrieve value of type %s", out))
 			}

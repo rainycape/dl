@@ -1,23 +1,30 @@
 #include <unistd.h>
+#include <stddef.h>
+#include <string.h>
+#include <stdint.h>
 
 #include "trampoline.h"
 
-/* If you're using more than 50 arguments you
+/* If you're using more than 100 arguments you
  * deserve nothing but a dirty crash
 */
-#define MAX_COUNT 50
+#define MAX_STACK_COUNT 100
 #define MAX_INTEGER_COUNT (6)
 #define MAX_FLOAT_COUNT (8)
 
-void *
-call(void *f, void **args, int *flags, int count)
+int
+call(void *f, void **args, int *flags, int count, void **out)
 {
     void *ret;
     void *fret;
-    void *integers[MAX_COUNT];
-    void *floats[MAX_COUNT];
+    void *integers[MAX_INTEGER_COUNT];
+    void *floats[MAX_FLOAT_COUNT];
+    void *stack[MAX_STACK_COUNT];
+    int stack_flags[MAX_STACK_COUNT];
     int integer_count = 0;
     int float_count = 0;
+    int stack_count = 0;
+    int stack_size = 0;
     int ii;
     // We need to add a non-removable function call,
     // so the compiler does not generate code for a leaf
@@ -28,10 +35,20 @@ call(void *f, void **args, int *flags, int count)
     write(0, NULL, 0) == 0;
     for (ii = 0; ii < count; ii++) {
         if (flags[ii] & ARG_FLAG_FLOAT) {
-            floats[float_count++] = args[ii];
+            if (float_count < MAX_FLOAT_COUNT) {
+                floats[float_count++] = args[ii];
+                continue;
+            }
         } else {
-            integers[integer_count++] = args[ii];
+            if (integer_count < MAX_INTEGER_COUNT) {
+                integers[integer_count++] = args[ii];
+                continue;
+            }
         }
+        // Argument on the stack
+        stack[stack_count] = args[ii];
+        stack_flags[stack_count] = flags[ii];
+        stack_count++;
     }
     if (float_count > 0) {
         __asm__(
@@ -48,6 +65,10 @@ call(void *f, void **args, int *flags, int count)
         );
         // Don't set a clobber list here, we want the registers to keep the values we've just set. Instead, set them in
         // the next __asm__ clobber list.
+    }
+    if (stack_count > 0) {
+        *out = strdup("passing arguments on stack not supported yet");
+        return 1;
     }
     // Call function and get rax before doing anything
     // else, otherwise the register might get overwritten
@@ -70,7 +91,9 @@ call(void *f, void **args, int *flags, int count)
             "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7"
     );
     if (flags[count] & ARG_FLAG_FLOAT) {
-        return fret;
+        *out = fret;
+    } else {
+        *out = ret;
     }
-    return ret;
+    return 0;
 }

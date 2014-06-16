@@ -56,3 +56,24 @@ fill42(unsigned char *data, int count) {
         data[ii] = 42;
     }
 }
+
+int
+sum6(int a1, int a2, int a3, int a4, int a5, int a6)
+{
+    printf("sum6(%d, %d, %d, %d, %d, %d)\n", a1, a2, a3, a4, a5, a6);
+    return a1 + a2 + a3 + a4 + a5 + a6;
+}
+
+int
+sum8(int a1, int a2, int a3, int a4, int a5, int a6, int a7, int a8)
+{
+    //printf("sum8(%d, %d, %d, %d, %d, %d, %d, %d)\n", a1, a2, a3, a4, a5, a6, a7, a8);
+    return a1 + a2 + a3 + a4 + a5 + a6 + a7 + a8;
+}
+
+int
+ret8(int a1, int a2, int a3, int a4, int a5, int a6, int a7, int a8)
+{
+    printf("ret8(%d, %d, %d, %d, %d, %d, %d, %d)\n", a1, a2, a3, a4, a5, a6, a7, a8);
+    return a8;
+}
