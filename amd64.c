@@ -89,6 +89,7 @@ call(void *f, void **args, int *flags, int count)
     __asm__("call *%0;"
         :
         : "r"(f)
+        : "rax", "rbx", "rcx", "rdx", "rsp", "rbp", "rsi", "rdi", "r8", "r9", "r10", "r11"
     );
     __asm__("movq %%rax, %0"
         : "=r" (ret)
