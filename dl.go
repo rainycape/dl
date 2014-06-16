@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"sync"
 	"unsafe"
 )
@@ -54,10 +55,20 @@ func Open(name string, flag int) (*DL, error) {
 	s := C.CString(name)
 	defer C.free(unsafe.Pointer(s))
 	mu.Lock()
-	defer mu.Unlock()
 	handle := C.dlopen(s, C.int(flag))
+	var err error
 	if handle == nil {
-		return nil, dlerror()
+		err = dlerror()
+	}
+	mu.Unlock()
+	if err != nil {
+		if runtime.GOOS == "linux" && name == "libc.so" {
+			// In most distros libc.so is now a text file
+			// and in order to dlopen() it the name libc.so.6
+			// must be used.
+			return Open(name+".6", flag)
+		}
+		return nil, err
 	}
 	return &DL{
 		handle: handle,

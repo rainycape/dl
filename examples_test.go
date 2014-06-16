@@ -8,7 +8,7 @@ import (
 )
 
 func ExampleOpen_snprintf() {
-	dl, err := dl.Open("libc.so.6", 0)
+	dl, err := dl.Open("libc", 0)
 	if err != nil {
 		panic(err)
 	}

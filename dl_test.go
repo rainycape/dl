@@ -27,7 +27,7 @@ func openTestLib(t *testing.T) *DL {
 }
 
 func TestOpen(t *testing.T) {
-	dl, err := Open("libc.so.6", 0)
+	dl, err := Open("libc", 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,7 +120,7 @@ func TestCounter(t *testing.T) {
 }
 
 func TestStrlen(t *testing.T) {
-	dl, err := Open("libc.so.6", 0)
+	dl, err := Open("libc", 0)
 	if err != nil {
 		t.Fatal(err)
 	}
