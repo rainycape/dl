@@ -199,8 +199,8 @@ func TestStackArguments(t *testing.T) {
 	if err := dl.Sym("sum8", &sum8); err != nil {
 		t.Fatal(err)
 	}
-	if r := sum8(1, 1, 1, 1, 1, 1, 1, 1); r != 8 {
-		t.Errorf("expecting sum8(1...) = 8, got %v instead", r)
+	if r := sum8(1, 2, 3, 4, 5, 6, 7, 8); r != 36 {
+		t.Errorf("expecting sum8(1...8) = 36, got %v instead", r)
 	}
 }
 
