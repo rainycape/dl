@@ -7,6 +7,25 @@ import (
 	"unsafe"
 )
 
+var (
+	testLib = filepath.Join("testdata", "lib.so")
+)
+
+func openTestLib(t *testing.T) *DL {
+	dl, err := Open(testLib, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if testing.Verbose() {
+		var verbose *int32
+		if err := dl.Sym("verbose", &verbose); err != nil {
+			t.Fatal(err)
+		}
+		*verbose = 1
+	}
+	return dl
+}
+
 func TestOpen(t *testing.T) {
 	dl, err := Open("libc.so.6", 0)
 	if err != nil {
@@ -22,11 +41,7 @@ func TestOpen(t *testing.T) {
 }
 
 func TestDlsymVars(t *testing.T) {
-	p := filepath.Join("testdata", "lib.so")
-	dl, err := Open(p, 0)
-	if err != nil {
-		t.Fatal(err)
-	}
+	dl := openTestLib(t)
 	defer dl.Close()
 	var (
 		s    string
@@ -70,11 +85,7 @@ func TestDlsymVars(t *testing.T) {
 }
 
 func TestCounter(t *testing.T) {
-	p := filepath.Join("testdata", "lib.so")
-	dl, err := Open(p, 0)
-	if err != nil {
-		t.Fatal(err)
-	}
+	dl := openTestLib(t)
 	defer dl.Close()
 	// C's int is always 32 bits
 	var counterPointer *int32
@@ -118,11 +129,7 @@ func TestStrlen(t *testing.T) {
 }
 
 func TestFunctions(t *testing.T) {
-	p := filepath.Join("testdata", "lib.so")
-	dl, err := Open(p, 0)
-	if err != nil {
-		t.Fatal(err)
-	}
+	dl := openTestLib(t)
 	defer dl.Close()
 	var square func(float64) float64
 	var squaref func(float32) float32
@@ -172,11 +179,7 @@ func TestFunctions(t *testing.T) {
 }
 
 func TestStackArguments(t *testing.T) {
-	p := filepath.Join("testdata", "lib.so")
-	dl, err := Open(p, 0)
-	if err != nil {
-		t.Fatal(err)
-	}
+	dl := openTestLib(t)
 	defer dl.Close()
 	var sum6 func(int32, int32, int32, int32, int32, int32) int32
 	if err := dl.Sym("sum6", &sum6); err != nil {
