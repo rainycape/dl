@@ -1,2 +1,3 @@
 *.so
 *.swp
+/dl.test
