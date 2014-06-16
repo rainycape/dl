@@ -16,12 +16,6 @@
         : reg \
     )
 
-volatile int fixer = 0;
-
-void foo(int a) {
-    fixer = a;
-}
-
 void *
 call(void *f, void **args, int *flags, int count)
 {
