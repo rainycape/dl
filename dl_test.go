@@ -1,6 +1,7 @@
 package dl
 
 import (
+	"os/exec"
 	"path/filepath"
 	"testing"
 	"unsafe"
@@ -167,5 +168,11 @@ func TestFunctions(t *testing.T) {
 		if v != 42 {
 			t.Errorf("b[%d] = %v != 42", ii, v)
 		}
+	}
+}
+
+func init() {
+	if err := exec.Command("make", "-C", "testdata").Run(); err != nil {
+		panic(err)
 	}
 }
