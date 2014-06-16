@@ -17,11 +17,9 @@ call(void *f, void **args, int *flags, int count, void **out)
     void *integers[MAX_INTEGER_COUNT];
     void *floats[MAX_FLOAT_COUNT];
     void *stack[MAX_STACK_COUNT];
-    int stack_flags[MAX_STACK_COUNT];
     int integer_count = 0;
     int float_count = 0;
     int stack_count = 0;
-    int stack_size = 0;
     int ii;
     for (ii = 0; ii < count; ii++) {
         if (flags[ii] & ARG_FLAG_FLOAT) {
@@ -40,9 +38,7 @@ call(void *f, void **args, int *flags, int count, void **out)
             return 1;
         }
         // Argument on the stack
-        stack[stack_count] = args[ii];
-        stack_flags[stack_count] = flags[ii];
-        stack_count++;
+        stack[stack_count++] = args[ii];
     }
     void *floats_ptr = NULL;
     if (float_count > 0) {
