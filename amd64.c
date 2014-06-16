@@ -44,6 +44,15 @@ call(void *f, void **args, int *flags, int count, void **out)
     if (float_count > 0) {
         floats_ptr = floats;
     }
+    if (stack_count & 1) {
+        stack_count++;
+    }
+    for (ii = 0; ii < stack_count / 2; ii++) {
+        int idx = stack_count-1-ii;
+        void *tmp = stack[idx];
+        stack[idx] = stack[ii];
+        stack[ii] = tmp;
+    }
     *out = make_call(f, integers, floats_ptr, stack_count, stack, flags[count] & ARG_FLAG_FLOAT);
     return 0;
 }
