@@ -65,8 +65,9 @@ func (d *DL) Sym(symbol string, out interface{}) error {
 	elem := val.Elem()
 	switch elem.Kind() {
 	case reflect.Int:
-		// C int is 32 bits even in 64 bit ABI
-		elem.SetInt(int64(*(*int32)(handle)))
+		// We treat Go's int as long, since it
+		// varies depending on the platform bit size
+		elem.SetInt(int64(*(*int)(handle)))
 	case reflect.Int8:
 		elem.SetInt(int64(*(*int8)(handle)))
 	case reflect.Int16:
@@ -76,8 +77,9 @@ func (d *DL) Sym(symbol string, out interface{}) error {
 	case reflect.Int64:
 		elem.SetInt(int64(*(*int64)(handle)))
 	case reflect.Uint:
-		// C uint is 32 bits even in 64 bit ABI
-		elem.SetUint(uint64(*(*uint32)(handle)))
+		// We treat Go's uint as unsigned long, since it
+		// varies depending on the platform bit size
+		elem.SetUint(uint64(*(*uint)(handle)))
 	case reflect.Uint8:
 		elem.SetUint(uint64(*(*uint8)(handle)))
 	case reflect.Uint16:

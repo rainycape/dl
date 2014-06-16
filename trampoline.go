@@ -57,27 +57,41 @@ func makeTrampoline(typ reflect.Type, handle unsafe.Pointer) (rFunc, error) {
 				defer C.free(unsafe.Pointer(s))
 				args[ii] = unsafe.Pointer(s)
 				flags[ii] |= C.ARG_FLAG_SIZE_PTR
-			case reflect.Int, reflect.Int32:
+			case reflect.Int:
 				args[ii] = unsafe.Pointer(uintptr(v.Int()))
-				flags[ii] = C.ARG_FLAG_SIZE_32
+				if v.Type().Size() == 4 {
+					flags[ii] = C.ARG_FLAG_SIZE_32
+				} else {
+					flags[ii] = C.ARG_FLAG_SIZE_64
+				}
 			case reflect.Int8:
 				args[ii] = unsafe.Pointer(uintptr(v.Int()))
 				flags[ii] = C.ARG_FLAG_SIZE_8
 			case reflect.Int16:
 				args[ii] = unsafe.Pointer(uintptr(v.Int()))
 				flags[ii] = C.ARG_FLAG_SIZE_16
+			case reflect.Int32:
+				args[ii] = unsafe.Pointer(uintptr(v.Int()))
+				flags[ii] = C.ARG_FLAG_SIZE_32
 			case reflect.Int64:
 				args[ii] = unsafe.Pointer(uintptr(v.Int()))
 				flags[ii] = C.ARG_FLAG_SIZE_64
-			case reflect.Uint, reflect.Uint32:
+			case reflect.Uint:
 				args[ii] = unsafe.Pointer(uintptr(v.Uint()))
-				flags[ii] = C.ARG_FLAG_SIZE_32
+				if v.Type().Size() == 4 {
+					flags[ii] = C.ARG_FLAG_SIZE_32
+				} else {
+					flags[ii] = C.ARG_FLAG_SIZE_64
+				}
 			case reflect.Uint8:
 				args[ii] = unsafe.Pointer(uintptr(v.Uint()))
 				flags[ii] = C.ARG_FLAG_SIZE_8
 			case reflect.Uint16:
 				args[ii] = unsafe.Pointer(uintptr(v.Uint()))
 				flags[ii] = C.ARG_FLAG_SIZE_16
+			case reflect.Uint32:
+				args[ii] = unsafe.Pointer(uintptr(v.Uint()))
+				flags[ii] = C.ARG_FLAG_SIZE_32
 			case reflect.Uint64:
 				args[ii] = unsafe.Pointer(uintptr(v.Uint()))
 				flags[ii] = C.ARG_FLAG_SIZE_64
@@ -116,7 +130,7 @@ func makeTrampoline(typ reflect.Type, handle unsafe.Pointer) (rFunc, error) {
 			var v reflect.Value
 			switch kind {
 			case reflect.Int:
-				v = reflect.ValueOf(int(int32(uintptr(ret))))
+				v = reflect.ValueOf(int(uintptr(ret)))
 			case reflect.Int8:
 				v = reflect.ValueOf(int8(uintptr(ret)))
 			case reflect.Int16:
@@ -126,7 +140,7 @@ func makeTrampoline(typ reflect.Type, handle unsafe.Pointer) (rFunc, error) {
 			case reflect.Int64:
 				v = reflect.ValueOf(int64(uintptr(ret)))
 			case reflect.Uint:
-				v = reflect.ValueOf(uint(uint32(uintptr(ret))))
+				v = reflect.ValueOf(uint(uintptr(ret)))
 			case reflect.Uint8:
 				v = reflect.ValueOf(uint8(uintptr(ret)))
 			case reflect.Uint16:

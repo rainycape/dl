@@ -47,7 +47,8 @@ func TestDlsymVars(t *testing.T) {
 		s    string
 		c    byte
 		u32  uint32
-		i    int
+		i    int32
+		lng  int
 		ptr  uintptr
 		uptr unsafe.Pointer
 	)
@@ -70,6 +71,11 @@ func TestDlsymVars(t *testing.T) {
 		t.Error(err)
 	} else if i != -9000 {
 		t.Errorf("expecting i = -9000, got %v instead", i)
+	}
+	if err := dl.Sym("my_long", &lng); err != nil {
+		t.Error(err)
+	} else if lng != -9000 {
+		t.Errorf("expecting lng = -9000, got %v instead", i)
 	}
 	if err := dl.Sym("my_pointer", &ptr); err != nil {
 		t.Error(err)
@@ -97,7 +103,7 @@ func TestCounter(t *testing.T) {
 		t.Fatal(err)
 	}
 	increaseCounter()
-	var counter int
+	var counter int32
 	if err := dl.Sym("counter", &counter); err != nil {
 		t.Fatal(err)
 	}
@@ -120,10 +126,10 @@ func TestStrlen(t *testing.T) {
 	}
 	defer dl.Close()
 	const s = "golang"
-	var strlen func(string) int
+	var strlen func(string) int32
 	if err := dl.Sym("strlen", &strlen); err != nil {
 		t.Error(err)
-	} else if strlen(s) != len(s) {
+	} else if int(strlen(s)) != len(s) {
 		t.Errorf("expecting strlen(%q) = %v, got %v instead", s, len(s), strlen(s))
 	}
 }
@@ -148,16 +154,16 @@ func TestFunctions(t *testing.T) {
 	if r := squaref(100); r != 10000 {
 		t.Errorf("expecting squaref(100) = 10000, got %v instead", r)
 	}
-	var strlength func(string, string, string) int
+	var strlength func(string, string, string) int32
 	if err := dl.Sym("strlength", &strlength); err != nil {
 		t.Fatal(err)
 	}
 	const s = "this is not a long string"
-	if r := strlength(s, s, s); r != 3*len(s) {
+	if r := int(strlength(s, s, s)); r != 3*len(s) {
 		t.Errorf("expecting strlength(%q, %q, %q) = %v, got %v instead", s, s, s, 3*len(s), r)
 	}
 
-	var add func(int, int) int
+	var add func(int32, int32) int32
 	if err := dl.Sym("add", &add); err != nil {
 		t.Fatal(err)
 	}
@@ -165,12 +171,12 @@ func TestFunctions(t *testing.T) {
 		t.Errorf("expecting add(3, 2) = 5, got %v instead", r)
 	}
 
-	var fill42 func([]byte, int)
+	var fill42 func([]byte, int32)
 	if err := dl.Sym("fill42", &fill42); err != nil {
 		t.Fatal(err)
 	}
 	b := make([]byte, 42)
-	fill42(b, len(b))
+	fill42(b, int32(len(b)))
 	for ii, v := range b {
 		if v != 42 {
 			t.Errorf("b[%d] = %v != 42", ii, v)

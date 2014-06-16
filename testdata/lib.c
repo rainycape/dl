@@ -10,6 +10,8 @@ uint32_t my_uint32 = 1337;
 
 int my_int = -9000;
 
+long my_long = -9000;
+
 void *my_pointer = (void *)0xdeadbeef;
 
 volatile int verbose = 0;
