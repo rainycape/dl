@@ -8,6 +8,7 @@ import "C"
 import (
 	"errors"
 	"fmt"
+	"path/filepath"
 	"reflect"
 	"sync"
 	"unsafe"
@@ -40,10 +41,15 @@ type DL struct {
 // with the given flags. See man dlopen for the available flags
 // and its meaning. Note that the only difference with dlopen is that
 // if nor RTLD_LAZY nor RTLD_NOW are specified, Open defaults to
-// RTLD_NOW rather than returning an error.
+// RTLD_NOW rather than returning an error. If the name argument
+// passed to name does not have extension, the default for the
+// platform will be appended to it (e.g. .so, .dylib, etc...).
 func Open(name string, flag int) (*DL, error) {
 	if flag&RTLD_LAZY == 0 && flag&RTLD_NOW == 0 {
 		flag |= RTLD_NOW
+	}
+	if filepath.Ext(name) == "" {
+		name = name + defaultExt
 	}
 	s := C.CString(name)
 	defer C.free(unsafe.Pointer(s))

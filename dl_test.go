@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	testLib = filepath.Join("testdata", "lib.so")
+	testLib = filepath.Join("testdata", "lib")
 )
 
 func openTestLib(t *testing.T) *DL {
