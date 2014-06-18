@@ -8,12 +8,13 @@ import (
 )
 
 func ExampleOpen_snprintf() {
-	dl, err := dl.Open("libc", 0)
+	lib, err := dl.Open("libc", 0)
 	if err != nil {
 		panic(err)
 	}
+	defer lib.Close()
 	var snprintf func([]byte, uint, string, ...interface{}) int
-	if err := dl.Sym("snprintf", &snprintf); err != nil {
+	if err := lib.Sym("snprintf", &snprintf); err != nil {
 		panic(err)
 	}
 	buf := make([]byte, 200)
