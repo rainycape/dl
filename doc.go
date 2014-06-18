@@ -1,6 +1,7 @@
 // Package dl implements dynamic of shared libraries, like
 // dlopen() and dlsym() in C.
 //
+//
 // This package supports the following type mapping between Go
 // and C.
 //
