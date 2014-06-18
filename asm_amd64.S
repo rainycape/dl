@@ -38,8 +38,10 @@ SYMBOL(make_call):
     movq %r9, %r13
 
     // Float arguments, test for no arguments first
+    xor %rax, %rax
     test %rdx, %rdx
     je setup_stack
+    mov $8, %rax
     movsd (%rdx), %xmm0
     movsd 8(%rdx), %xmm1
     movsd 16(%rdx), %xmm2
