@@ -87,3 +87,15 @@ ret8(int a1, int a2, int a3, int a4, int a5, int a6, int a7, int a8)
     _printf("ret8(%d, %d, %d, %d, %d, %d, %d, %d)\n", a1, a2, a3, a4, a5, a6, a7, a8);
     return a8;
 }
+
+char *
+return_string(int a)
+{
+    if (a == 0) {
+        return NULL;
+    }
+    if (a == 1) {
+        return "";
+    }
+    return "non-empty";
+}

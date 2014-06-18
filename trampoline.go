@@ -153,6 +153,16 @@ func makeTrampoline(typ reflect.Type, handle unsafe.Pointer) (rFunc, error) {
 				v = reflect.ValueOf(math.Float32frombits(uint32(uintptr(ret))))
 			case reflect.Float64:
 				v = reflect.ValueOf(math.Float64frombits(uint64(uintptr(ret))))
+			case reflect.Ptr:
+				if out.Elem().Kind() == reflect.String && ret != nil {
+					s := C.GoString((*C.char)(ret))
+					v = reflect.ValueOf(&s)
+					break
+				}
+				v = reflect.NewAt(out.Elem(), ret)
+			case reflect.String:
+				s := C.GoString((*C.char)(ret))
+				v = reflect.ValueOf(s)
 			case reflect.Uintptr:
 				v = reflect.ValueOf(uintptr(ret))
 			case reflect.UnsafePointer:

@@ -204,6 +204,39 @@ func TestStackArguments(t *testing.T) {
 	}
 }
 
+func TestReturnString(t *testing.T) {
+	dl := openTestLib(t)
+	defer dl.Close()
+
+	var returnString func(int32) string
+	if err := dl.Sym("return_string", &returnString); err != nil {
+		t.Fatal(err)
+	}
+	if r := returnString(0); r != "" {
+		t.Errorf("expecting returnString(0) = \"\", got %v instead", r)
+	}
+	if r := returnString(1); r != "" {
+		t.Errorf("expecting returnString(1) = \"\", got %v instead", r)
+	}
+	if r := returnString(2); r != "non-empty" {
+		t.Errorf("expecting returnString(2) = \"non-empty\", got %v instead", r)
+	}
+
+	var returnStringPtr func(int32) *string
+	if err := dl.Sym("return_string", &returnStringPtr); err != nil {
+		t.Fatal(err)
+	}
+	if r := returnStringPtr(0); r != nil {
+		t.Errorf("expecting returnStringPtr(0) = nil, got %v instead", r)
+	}
+	if r := returnStringPtr(1); r == nil || *r != "" {
+		t.Errorf("expecting returnStringPtr(1) = \"\", got %v instead", r)
+	}
+	if r := returnStringPtr(2); r == nil || *r != "non-empty" {
+		t.Errorf("expecting returnStringPtr(2) = \"non-empty\", got %v instead", r)
+	}
+}
+
 func init() {
 	if err := exec.Command("make", "-C", "testdata").Run(); err != nil {
 		panic(err)
