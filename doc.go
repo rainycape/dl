@@ -67,5 +67,5 @@
 //
 // Typically, calling functions via this package rather than using cgo directly
 // takes around 500ns more per call, due to reflection overhead. Future versions
-// muight adopt a JIT strategy which should make it as fast as cgo.
+// might adopt a JIT strategy which should make it as fast as cgo.
 package dl
