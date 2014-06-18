@@ -55,7 +55,7 @@
 // feature with extreme care. Argument and return types must be of one of the
 // supported types. See the examples in this package for the complete code.
 //
-//  var printf func(string, args ...interface{}) int32
+//  var printf func(string, ...interface{}) int32
 //  if err := lib.Sym("printf", &printf); err != nil {
 //	handle_error...
 //  }
