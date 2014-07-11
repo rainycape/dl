@@ -3,5 +3,5 @@
 package dl
 
 const (
-	defaultExt = ".so"
+	LibExt = ".so"
 )

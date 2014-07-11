@@ -49,8 +49,8 @@ func Open(name string, flag int) (*DL, error) {
 	if flag&RTLD_LAZY == 0 && flag&RTLD_NOW == 0 {
 		flag |= RTLD_NOW
 	}
-	if filepath.Ext(name) == "" {
-		name = name + defaultExt
+	if name != "" && filepath.Ext(name) == "" {
+		name = name + LibExt
 	}
 	s := C.CString(name)
 	defer C.free(unsafe.Pointer(s))

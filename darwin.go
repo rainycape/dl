@@ -3,5 +3,5 @@
 package dl
 
 const (
-	defaultExt = ".dylib"
+	LibExt = ".dylib"
 )
