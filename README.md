@@ -5,15 +5,6 @@ Runtime dynamic library loader (dlopen / dlsym) for Go (golang)
 To install dl run the following command:
 
 ```
-    go get gopkgs.com/dl.v1
+    go get github.com/rainycape/dl
 ```
-
-
-Then use the following import path to ensure a stable API:
-
-```go
-    import "gopkgs.com/dl.v1"
-```
-
-For documentation and available versions,
-see http://gopkgs.com/dl.
+[![GoDoc](https://godoc.org/github.com/rainycape/dl?status.svg)](https://godoc.org/github.com/rainycape/dl)
