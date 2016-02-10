@@ -98,7 +98,8 @@ func (d *DL) Sym(symbol string, out interface{}) error {
 		return errors.New("out can't be nil")
 	}
 	elem := val.Elem()
-	switch elem.Kind() {
+	typ := reflect.TypeOf(elem.Interface())
+	switch typ.Kind() {
 	case reflect.Int:
 		// We treat Go's int as long, since it
 		// varies depending on the platform bit size
@@ -130,7 +131,6 @@ func (d *DL) Sym(symbol string, out interface{}) error {
 	case reflect.Float64:
 		elem.SetFloat(float64(*(*float64)(handle)))
 	case reflect.Func:
-		typ := elem.Type()
 		tr, err := makeTrampoline(typ, handle)
 		if err != nil {
 			return err
