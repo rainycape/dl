@@ -7,7 +7,7 @@ Runtime dynamic library loader (`dlopen`) for Go.
 Install in the usual Go fashion:
 
 ```sh
-$ go get -u github.com/rainycape/dl
+$ go get -u github.com/kenshaw/dl
 ```
 
 ## Running Tests
@@ -18,5 +18,5 @@ $ go get -u github.com/rainycape/dl
 $ GODEBUG=cgocheck=0 go test -v
 ```
 
-[1]: https://godoc.org/github.com/rainycape/dl?status.svg
-[2]: https://godoc.org/github.com/rainycape/dl
+[1]: https://godoc.org/github.com/kenshaw/dl?status.svg
+[2]: https://godoc.org/github.com/kenshaw/dl

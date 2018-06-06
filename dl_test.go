@@ -241,7 +241,7 @@ func TestReturnString(t *testing.T) {
 }
 
 func TestMain(m *testing.M) {
-	dir := filepath.Join(os.Getenv("GOPATH"), "src/github.com/rainycape/dl/testdata")
+	dir := filepath.Join(os.Getenv("GOPATH"), "src/github.com/kenshaw/dl/testdata")
 	if err := exec.Command("make", "-C", dir).Run(); err != nil {
 		log.Fatalf("ERROR: could not build test lib: %v", err)
 	}

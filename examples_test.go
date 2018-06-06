@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/rainycape/dl"
+	"github.com/kenshaw/dl"
 )
 
 func ExampleOpen_snprintf() {
