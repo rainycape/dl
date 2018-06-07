@@ -1,22 +1,24 @@
 package dl
 
-// #include <dlfcn.h>
-// #include <stdlib.h>
-// #cgo LDFLAGS: -ldl
+/*
+#cgo LDFLAGS: -ldl
+
+#define _GNU_SOURCE
+#include <dlfcn.h>
+#include <stdlib.h>
+*/
 import "C"
 
 import (
 	"errors"
 	"fmt"
-	"path/filepath"
 	"reflect"
-	"runtime"
 	"sync"
 	"unsafe"
 )
 
+// RTLD_* values. See man dlopen.
 const (
-	// dlopen() flags. See man dlopen.
 	RTLD_LAZY     = int(C.RTLD_LAZY)
 	RTLD_NOW      = int(C.RTLD_NOW)
 	RTLD_GLOBAL   = int(C.RTLD_GLOBAL)
@@ -25,150 +27,137 @@ const (
 	RTLD_NOLOAD   = int(C.RTLD_NOLOAD)
 )
 
-var (
-	mu sync.Mutex
-)
+// mu is the dl* call mutex.
+var mu sync.Mutex
 
-// DL represents an opened dynamic library. Use Open
-// to initialize a DL and use DL.Close when you're finished
-// with it. Note that when the DL is closed all its loaded
-// symbols become invalid.
-type DL struct {
-	mu     sync.Mutex
-	handle unsafe.Pointer
+// dlerror wraps C.dlerror, returning a error from C.dlerror.
+func dlerror() error {
+	return errors.New(C.GoString(C.dlerror()))
 }
 
-// Open opens the shared library identified by the given name
-// with the given flags. See man dlopen for the available flags
-// and its meaning. Note that the only difference with dlopen is that
-// if nor RTLD_LAZY nor RTLD_NOW are specified, Open defaults to
-// RTLD_NOW rather than returning an error. If the name argument
-// passed to name does not have extension, the default for the
-// platform will be appended to it (e.g. .so, .dylib, etc...).
-func Open(name string, flag int) (*DL, error) {
-	if flag&RTLD_LAZY == 0 && flag&RTLD_NOW == 0 {
-		flag |= RTLD_NOW
-	}
-	if name != "" && filepath.Ext(name) == "" {
-		name = name + LibExt
-	}
-	s := C.CString(name)
-	defer C.free(unsafe.Pointer(s))
+// dlopen wraps C.dlopen, opening a handle for library n, passing flags.
+func dlopen(name string, flags int) (unsafe.Pointer, error) {
 	mu.Lock()
-	handle := C.dlopen(s, C.int(flag))
-	var err error
-	if handle == nil {
-		err = dlerror()
+	defer mu.Unlock()
+
+	n := C.CString(name)
+	defer C.free(unsafe.Pointer(n))
+
+	h := C.dlopen(n, C.int(flags))
+	if h == nil {
+		return nil, dlerror()
 	}
-	mu.Unlock()
-	if err != nil {
-		if runtime.GOOS == "linux" && name == "libc.so" {
-			// In most distros libc.so is now a text file
-			// and in order to dlopen() it the name libc.so.6
-			// must be used.
-			return Open(name+".6", flag)
-		}
-		return nil, err
-	}
-	return &DL{
-		handle: handle,
-	}, nil
+	return h, nil
 }
 
-// Sym loads the symbol identified by the given name into
-// the out parameter. Note that out must always be a pointer.
-// See the package documentation to learn how types are mapped
-// between Go and C.
-func (d *DL) Sym(symbol string, out interface{}) error {
-	s := C.CString(symbol)
-	defer C.free(unsafe.Pointer(s))
+// dlclose wraps C.dlclose, closing handle l.
+func dlclose(h unsafe.Pointer) error {
 	mu.Lock()
-	handle := C.dlsym(d.handle, s)
-	if handle == nil {
-		err := dlerror()
-		mu.Unlock()
-		return err
+	defer mu.Unlock()
+
+	if C.dlclose(h) != 0 {
+		return dlerror()
 	}
-	mu.Unlock()
-	val := reflect.ValueOf(out)
-	if !val.IsValid() || val.Kind() != reflect.Ptr {
-		return fmt.Errorf("out must be a pointer, not %T", out)
+	return nil
+}
+
+// dlsym wraps C.dlsym, loading from handle h the symbol name n, and returning a
+// pointer to the loaded symbol.
+func dlsym(h unsafe.Pointer, n *C.char) (unsafe.Pointer, error) {
+	mu.Lock()
+	defer mu.Unlock()
+
+	sym := C.dlsym(h, n)
+	if sym == nil {
+		return nil, dlerror()
 	}
-	if val.IsNil() {
-		return errors.New("out can't be nil")
+	return sym, nil
+}
+
+// cast converts sym into v.
+func cast(sym unsafe.Pointer, v interface{}) error {
+	val := reflect.ValueOf(v)
+	if !val.IsValid() || val.Kind() != reflect.Ptr || val.IsNil() {
+		return errors.New("v must be a pointer and cannot be nil")
 	}
+
 	elem := val.Elem()
 	switch elem.Kind() {
+	// treat Go int/uint as long, since it depends on the platform
 	case reflect.Int:
-		// We treat Go's int as long, since it
-		// varies depending on the platform bit size
-		elem.SetInt(int64(*(*int)(handle)))
-	case reflect.Int8:
-		elem.SetInt(int64(*(*int8)(handle)))
-	case reflect.Int16:
-		elem.SetInt(int64(*(*int16)(handle)))
-	case reflect.Int32:
-		elem.SetInt(int64(*(*int32)(handle)))
-	case reflect.Int64:
-		elem.SetInt(int64(*(*int64)(handle)))
+		elem.SetInt(int64(*(*int)(sym)))
 	case reflect.Uint:
-		// We treat Go's uint as unsigned long, since it
-		// varies depending on the platform bit size
-		elem.SetUint(uint64(*(*uint)(handle)))
+		elem.SetUint(uint64(*(*uint)(sym)))
+
+	case reflect.Int8:
+		elem.SetInt(int64(*(*int8)(sym)))
+	case reflect.Int16:
+		elem.SetInt(int64(*(*int16)(sym)))
+	case reflect.Int32:
+		elem.SetInt(int64(*(*int32)(sym)))
+	case reflect.Int64:
+		elem.SetInt(int64(*(*int64)(sym)))
+
 	case reflect.Uint8:
-		elem.SetUint(uint64(*(*uint8)(handle)))
+		elem.SetUint(uint64(*(*uint8)(sym)))
 	case reflect.Uint16:
-		elem.SetUint(uint64(*(*uint16)(handle)))
+		elem.SetUint(uint64(*(*uint16)(sym)))
 	case reflect.Uint32:
-		elem.SetUint(uint64(*(*uint32)(handle)))
+		elem.SetUint(uint64(*(*uint32)(sym)))
 	case reflect.Uint64:
-		elem.SetUint(uint64(*(*uint64)(handle)))
-	case reflect.Uintptr:
-		elem.SetUint(uint64(*(*uintptr)(handle)))
+		elem.SetUint(uint64(*(*uint64)(sym)))
+
 	case reflect.Float32:
-		elem.SetFloat(float64(*(*float32)(handle)))
+		elem.SetFloat(float64(*(*float32)(sym)))
 	case reflect.Float64:
-		elem.SetFloat(float64(*(*float64)(handle)))
+		elem.SetFloat(float64(*(*float64)(sym)))
+
+	case reflect.Uintptr:
+		elem.SetUint(uint64(*(*uintptr)(sym)))
+	case reflect.Ptr:
+		v := reflect.NewAt(elem.Type().Elem(), sym)
+		elem.Set(v)
+	case reflect.UnsafePointer:
+		elem.SetPointer(sym)
+
+	case reflect.String:
+		elem.SetString(C.GoString(*(**C.char)(sym)))
+
 	case reflect.Func:
 		typ := elem.Type()
-		tr, err := makeTrampoline(typ, handle)
+		tr, err := makeTrampoline(typ, sym)
 		if err != nil {
 			return err
 		}
 		v := reflect.MakeFunc(typ, tr)
 		elem.Set(v)
-	case reflect.Ptr:
-		v := reflect.NewAt(elem.Type().Elem(), handle)
-		elem.Set(v)
-	case reflect.String:
-		elem.SetString(C.GoString(*(**C.char)(handle)))
-	case reflect.UnsafePointer:
-		elem.SetPointer(handle)
+
 	default:
-		return fmt.Errorf("invalid out type %T", out)
+		return fmt.Errorf("cannot convert to type %T", elem.Kind())
 	}
+
 	return nil
 }
 
-// Close closes the shared library handle. All symbols
-// loaded from the library will become invalid.
-func (d *DL) Close() error {
-	if d.handle != nil {
-		d.mu.Lock()
-		defer d.mu.Unlock()
-		if d.handle != nil {
-			mu.Lock()
-			defer mu.Unlock()
-			if C.dlclose(d.handle) != 0 {
-				return dlerror()
-			}
-			d.handle = nil
-		}
+// Sym wraps loading symbol name from handle h, decoding the value to v.
+func Sym(h unsafe.Pointer, name string, v interface{}) error {
+	n := C.CString(name)
+	defer C.free(unsafe.Pointer(n))
+
+	sym, err := dlsym(h, n)
+	if err != nil {
+		return err
 	}
-	return nil
+
+	return cast(sym, v)
 }
 
-func dlerror() error {
-	s := C.dlerror()
-	return errors.New(C.GoString(s))
+// SymDefault loads symbol name into v from the RTLD_DEFAULT handle.
+func SymDefault(name string, v interface{}) error {
+	return Sym(C.RTLD_DEFAULT, name, v)
+}
+
+// SymNext loads symbol name into v from the RTLD_NEXT handle.
+func SymNext(name string, v interface{}) error {
+	return Sym(C.RTLD_NEXT, name, v)
 }
