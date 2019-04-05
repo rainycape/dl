@@ -172,20 +172,18 @@ func TestFunctions(t *testing.T) {
 		t.Errorf("expecting add(3, 2) = 5, got %v instead", r)
 	}
 
-	/*
-		var fill42 func([]byte, int32)
-		if err := dl.Sym("fill42", &fill42); err != nil {
-			t.Fatal(err)
+	var fill42 func([]byte, int32)
+	if err := dl.Sym("fill42", &fill42); err != nil {
+		t.Fatal(err)
+	}
+
+	b := make([]byte, 42)
+	fill42(b, int32(len(b)))
+	for ii, v := range b {
+		if v != 42 {
+			t.Errorf("b[%d] = %v != 42", ii, v)
 		}
-		FIXME: runtime error: cgo argument has Go pointer to Go pointer
-		b := make([]byte, 42)
-		fill42(b, int32(len(b)))
-		for ii, v := range b {
-			if v != 42 {
-				t.Errorf("b[%d] = %v != 42", ii, v)
-			}
-		}
-	*/
+	}
 }
 
 func TestStackArguments(t *testing.T) {
