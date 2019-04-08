@@ -3,6 +3,7 @@ package dl
 // #include <dlfcn.h>
 // #include <stdlib.h>
 // #cgo LDFLAGS: -ldl
+// #cgo CFLAGS: -O0
 import "C"
 
 import (
