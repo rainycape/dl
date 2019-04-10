@@ -3,6 +3,7 @@ package dl
 import (
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"testing"
 	"unsafe"
 )
@@ -175,6 +176,7 @@ func TestFunctions(t *testing.T) {
 	if err := dl.Sym("fill42", &fill42); err != nil {
 		t.Fatal(err)
 	}
+
 	b := make([]byte, 42)
 	fill42(b, int32(len(b)))
 	for ii, v := range b {
@@ -234,6 +236,24 @@ func TestReturnString(t *testing.T) {
 	}
 	if r := returnStringPtr(2); r == nil || *r != "non-empty" {
 		t.Errorf("expecting returnStringPtr(2) = \"non-empty\", got %v instead", r)
+	}
+}
+
+func TestInterface(t *testing.T) {
+	dl := openTestLib(t)
+	defer dl.Close()
+
+	var square struct{ Call func(float64) float64 }
+
+	v := reflect.ValueOf(&square).Elem().Field(0)
+	sym := v.Interface()
+	if err := dl.Sym("square", &sym); err != nil {
+		t.Fatal(err)
+	}
+	v.Set(reflect.ValueOf(sym))
+
+	if r := square.Call(4); r != 16 {
+		t.Errorf("expecting square(4) = 16, got %v instead", r)
 	}
 }
 
